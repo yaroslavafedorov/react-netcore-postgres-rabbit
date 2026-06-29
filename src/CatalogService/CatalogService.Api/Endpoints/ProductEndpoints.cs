@@ -1,3 +1,4 @@
+using CatalogService.Services.Contracts.Dtos;
 using CatalogService.Services.Contracts.Filters;
 using CatalogService.Services.Contracts.Interfaces;
 
@@ -36,31 +37,29 @@ public static class ProductEndpoints
         .WithName("GetProductsRange");
 
         // POST - Создать новый продукт (используем record для красивой схемы в Swagger)
-        group.MapPost("", (CreateProductRequest request) =>
+        group.MapPost("", async (CreateProductRequestDto request, IProductCommands commands, CancellationToken cancellationToken) =>
         {
-            var newId = Guid.NewGuid();
-            return Results.Created($"/api/products/{newId}", new { Id = newId, Status = "Created" });
+            var result = await commands.AddProductAsync(request, cancellationToken);
+            return Results.Created($"/api/products/{result}", new { Id = result, Status = "Created" });
         })
         .WithName("CreateProduct");
 
         // PUT - Обновить продукт
-        group.MapPut("/{id:guid}", (Guid id, UpdateProductRequest request) =>
+        group.MapPut("/{id:guid}", async (Guid id, UpdateProductRequestDto request, IProductCommands commands, CancellationToken cancellationToken) =>
         {
-            return Results.Ok(new { Id = id, Status = "Updated" });
+            var result = await commands.UpdateProductsync(id, request, cancellationToken);
+            return Results.Ok(new { Id = result, Status = "Updated" });
         })
         .WithName("UpdateProduct");
 
         // DELETE - Удалить продукт
-        group.MapDelete("/{id:guid}", (Guid id) =>
+        group.MapDelete("/{id:guid}", async (Guid id, IProductCommands commands, CancellationToken cancellationToken) =>
         {
-            return Results.Ok(new { Id = id, Status = "Deleted (Soft)" });
+            var result = await commands.DeleteProductsync(id, cancellationToken);
+            return Results.Ok(new { Id = result, Status = "Deleted (Soft)" });
         })
         .WithName("DeleteProduct");
 
         return app;
     }
 }
-
-// Временные контракты (DTO) для отображения полей в интерфейсе Swagger
-public record CreateProductRequest(string Name, string Description, decimal Price, Guid CategoryId);
-public record UpdateProductRequest(string Name, string Description, decimal Price);

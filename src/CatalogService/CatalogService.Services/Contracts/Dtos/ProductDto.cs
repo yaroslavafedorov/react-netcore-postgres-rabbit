@@ -3,30 +3,30 @@ namespace CatalogService.Services.Contracts.Dtos;
 /// <summary>
 /// Продукт
 /// </summary>
-public class ProductDto
+public record ProductDto
 {
     /// <summary>
     /// ИД Продукта
     /// </summary>
-    public Guid Id { get; set; }
+    public Guid Id { get; init; }
 
     /// <summary>
     /// Наименование продукта
     /// </summary>
-    public string Name { get; set; } = string.Empty; 
+    public string Name { get; init; } = string.Empty; 
 
     /// <summary>
     /// Описание продукта
     /// </summary>
-    public string Description { get; set; } = string.Empty; 
+    public string Description { get; init; } = string.Empty; 
 
     /// <summary>
     /// Цена продукта
     /// </summary>
-    public decimal Price { get; set; }
+    public decimal Price { get; init; }
 
     /// <summary>
     /// ИД Категории продукта
     /// </summary>
-    public Guid CategoryId { get; set; }
+    public Guid CategoryId { get; init; }
 }

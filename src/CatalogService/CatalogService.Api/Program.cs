@@ -1,6 +1,7 @@
 using CatalogService.Api.Endpoints;
 using CatalogService.Persistence;
 using CatalogService.Persistence.Seeds;
+using CatalogService.Services.Commands;
 using CatalogService.Services.Contracts.Interfaces;
 using CatalogService.Services.Queries;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +33,10 @@ builder.Services.AddCors(options =>
 });
 
 // CQRS
+// Категории
 builder.Services.AddScoped<ICategoryQueries, CategoryQueries>();
+// Товары
+builder.Services.AddScoped<IProductCommands, ProductCommands>();
 builder.Services.AddScoped<IProductQueries, ProductQueries>();
 
 var app = builder.Build();

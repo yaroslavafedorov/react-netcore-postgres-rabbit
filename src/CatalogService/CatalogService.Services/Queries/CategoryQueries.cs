@@ -64,9 +64,9 @@ public class CategoryQueries(CatalogDbContext dbContext) : ICategoryQueries
 
     private static readonly System.Linq.Expressions.Expression<Func<Category, CategoryDto>> ToDto = 
         x => new CategoryDto
-        {
-            Id = x.Id,
-            Name = x.Name,
-            Description = x.Description
-        };
+        (
+            x.Id,
+            x.Name,
+            x.Description
+        );
 }
