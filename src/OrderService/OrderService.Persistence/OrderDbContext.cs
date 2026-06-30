@@ -1,13 +1,12 @@
-﻿using CatalogService.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using MassTransit;
 using MassTransit.EntityFrameworkCoreIntegration;
+using OrderService.Domain.Entities;
 
-namespace CatalogService.Persistence;
+namespace OrderService.Persistence;
 
-public class CatalogDbContext(DbContextOptions<CatalogDbContext> options) : DbContext(options)
+public class OrderDbContext(DbContextOptions<OrderDbContext> options) : DbContext(options)
 {
-    public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -19,7 +18,6 @@ public class CatalogDbContext(DbContextOptions<CatalogDbContext> options) : DbCo
             .HasColumnType("decimal(18,2)");
 
         modelBuilder.Entity<Product>().HasQueryFilter(p => !p.IsDeleted);
-        modelBuilder.Entity<Category>().HasQueryFilter(c => !c.IsDeleted);
 
         // НАСТРОЙКА ТАБЛИЦ OUTBOX ДЛЯ MASSTRANSIT
         // Этот метод автоматически добавит в модель схемы таблиц: 

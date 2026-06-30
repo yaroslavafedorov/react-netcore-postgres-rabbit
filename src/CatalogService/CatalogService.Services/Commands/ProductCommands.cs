@@ -3,10 +3,14 @@ using CatalogService.Persistence;
 using CatalogService.Services.Contracts.Dtos;
 using CatalogService.Services.Contracts.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using MassTransit;
+using CatalogService.Services.Contracts.Events;
 
 namespace CatalogService.Services.Commands;
 
-public class ProductCommands(CatalogDbContext dbContext) : IProductCommands
+public class ProductCommands(
+    CatalogDbContext dbContext,
+    IPublishEndpoint publishEndpoint) : IProductCommands
 {
     /// <inheritdoc/>
     public async Task<Guid> AddProductAsync(CreateProductRequestDto newProduct, CancellationToken cancellationToken)
@@ -32,18 +36,43 @@ public class ProductCommands(CatalogDbContext dbContext) : IProductCommands
     /// <inheritdoc/>
     public async Task<Guid> UpdateProductsync(Guid id, UpdateProductRequestDto product, CancellationToken cancellationToken)
     {
-        var entity = await dbContext.Products
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken) 
-            ?? throw new Exception($"Товар с ИД:{id} не найден.");
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        {
+            try
+            {
+                var entity = await dbContext.Products
+                    .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+                    ?? throw new Exception($"Товар с ИД:{id} не найден.");
 
-        entity.Name = product.Name;
-        entity.Description = product.Description;
-        entity.Price = product.Price;
-        entity.UpdateDateTime = DateTimeOffset.UtcNow;
+                var isPriceChanged = entity.Price != product.Price;
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+                entity.Name = product.Name;
+                entity.Description = product.Description;
+                entity.Price = product.Price;
+                entity.UpdateDateTime = DateTimeOffset.UtcNow;
 
-        //TODO добавить отправку сообщения в МассТранзит с исользованием транзакшен аутбокс
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                if (isPriceChanged)
+                {
+                    await publishEndpoint.Publish(new ProductPriceChangedEvent
+                    {
+                        ProductId = entity.Id,
+                        Price = entity.Price,
+                        Name = entity.Name
+                    }, cancellationToken);
+
+                    await dbContext.SaveChangesAsync(cancellationToken);
+                }
+
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        }
 
         return id;
     }
