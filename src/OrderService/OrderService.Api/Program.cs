@@ -8,6 +8,13 @@ using OrderService.Services.Contracts.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Отключаем строгую проверку графа DI при запуске из-под инструментов миграции CLI
+builder.Host.UseDefaultServiceProvider((context, options) =>
+{
+    options.ValidateScopes = false;
+    options.ValidateOnBuild = false;
+});
+
 var connectionString = builder.Configuration.GetConnectionString("Connection");
 
 builder.Services.AddDbContext<OrderDbContext>(options =>
@@ -49,11 +56,37 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "Order Service API", Version = "v1" });
+});
+
+// 4. Настраиваем CORS-политику для React
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ReactAppPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 // CQRS
 // Заказы
 builder.Services.AddScoped<IOrderCommands, OrderCommands>();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Order API v1"));
+}
+
+// Включаем CORS
+app.UseCors("ReactAppPolicy");
 
 app.MapOrderEndpoints(); 
 
