@@ -1,13 +1,45 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { orderApi } from '../api/orderApi';
 import type { CartItem } from '../types/product';
+import type { OrderItem } from '../types/order';
 
 interface CartProps {
   cartItems: CartItem[];
   clearCart: () => void;
+  onOrderSuccess: (orderId: string) => void
 }
 
-export function Cart({ cartItems, clearCart }: CartProps) {
+export function Cart({ cartItems, clearCart, onOrderSuccess }: CartProps) {
   const totalPrice = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleCheckout()
+  {
+      setIsSubmitting(true);
+
+      const items: OrderItem[] = cartItems.map(item => ({
+        productId: item.product.id, // Достаем вложенный ID и переименовываем в productId
+        quantity: item.quantity     // Переносим количество штук
+      }));
+
+      try
+      {
+        const result = await orderApi.createOrder(items);
+        clearCart();
+        onOrderSuccess(result);
+
+        return result;
+      }
+      catch
+      {
+        alert('Ошибка оформления заказа');
+      }
+      finally
+      {
+        setIsSubmitting(false);
+      }
+  }
 
   return (
     <div>
@@ -44,6 +76,9 @@ export function Cart({ cartItems, clearCart }: CartProps) {
             <h3>Итого: <span style={{ color: '#646cff' }}>{totalPrice} руб.</span></h3>
             <button onClick={clearCart} style={{ backgroundColor: '#d9534f', color: 'white', padding: '10px 15px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
               Очистить корзину
+            </button>
+            <button onClick={handleCheckout} style={{ backgroundColor: '#684fd9', color: 'white', padding: '10px 15px', border: 'none', borderRadius: '4px', cursor: 'pointer' }} disabled={isSubmitting}>
+              Оформить заказ
             </button>
           </div>
         </div>
