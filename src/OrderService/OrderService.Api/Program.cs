@@ -1,7 +1,10 @@
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using OrderService.Api.Endpoints;
 using OrderService.Persistence;
+using OrderService.Services.Commands;
 using OrderService.Services.Consumers;
+using OrderService.Services.Contracts.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,8 +49,12 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
+// CQRS
+// Заказы
+builder.Services.AddScoped<IOrderCommands, OrderCommands>();
+
 var app = builder.Build();
 
-app.MapGet("/", () => "Order Service API is running...");
+app.MapOrderEndpoints(); 
 
 app.Run();
